@@ -1,0 +1,35 @@
+# Fork-only helper: builds an installable arm64 debug APK of Ente Photos.
+# Lives only on apk/* branches; never part of a PR to ente/ente.
+name: Test APK
+on:
+    push:
+        branches: ["apk/**"]
+jobs:
+    apk:
+        runs-on: ubuntu-latest
+        timeout-minutes: 90
+        defaults:
+            run:
+                working-directory: mobile/apps/photos
+        steps:
+            - uses: actions/checkout@v4
+            - uses: actions/setup-java@v4
+              with:
+                  distribution: temurin
+                  java-version: "17"
+            - name: Install Flutter
+              uses: ./.github/actions/setup-flutter
+            - run: flutter pub get --enforce-lockfile
+            - run: cargo codegen frb photos
+              working-directory: rust
+            - name: Free runner disk space
+              run: sudo rm -rf /usr/share/dotnet
+            - run: flutter analyze lib/module/download/gallery.dart
+            - name: Let the debug build run on arm64 phones (test build only)
+              run: sed -i 's/abiFilters "x86_64"/abiFilters "arm64-v8a"/' android/app/build.gradle
+            - run: flutter build apk --debug --flavor independent --target-platform android-arm64
+            - uses: actions/upload-artifact@v4
+              with:
+                  name: ente-photos-${{ github.ref_name == 'apk/before' && 'before' || 'after' }}-${{ github.sha }}
+                  path: mobile/apps/photos/build/app/outputs/flutter-apk/*.apk
+                  retention-days: 14
