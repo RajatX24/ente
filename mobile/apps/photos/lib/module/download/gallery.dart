@@ -139,7 +139,7 @@ Future<void> _downloadToGallery(
         savedAsset = await PhotoManager.editor.saveVideo(
           fileToSave,
           title: mediaStoreTitle,
-          creationDate: Platform.isIOS ? _captureDate(file) : null,
+          creationDate: _captureDate(file),
         );
       } else if (type == FileType.livePhoto) {
         final File? liveVideoFile = await getFileFromServer(
